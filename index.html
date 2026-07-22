@@ -443,9 +443,9 @@
   <div class="step" id="confirmStep">
     <div class="card confirm-wrap">
       <h2 style="font-size:18px;">Application Submitted ✅</h2>
-      <p class="sub">Thank you for registering with MotoLease SA. Your reference number is:</p>
-      <div class="refid" id="confirmRefId">—</div>
-      <p class="sub">A copy of your application has been recorded. Our team will be in touch regarding available opportunities and support programmes.</p>
+      <p class="sub">Thank you for registering with MotoLease SA.</p>
+      <p class="sub" style="font-weight:600;">Check your email — we've sent you a confirmation with your reference number and a copy of your application.</p>
+      <p class="sub">Our team will be in touch regarding available opportunities and support programmes.</p>
     </div>
   </div>
 
@@ -453,7 +453,7 @@
 
 <script>
   // ==== CONFIGURE THIS: your deployed Apps Script Web App /exec URL ====
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyA5K6Vwj0UUzrgzaoq9Qv7j_yrPHaokNKSiHFdC7LTIYTbxZxOo71ZRli_WCXNwUwhZw/exec";
+  const APPS_SCRIPT_URL = "PASTE_YOUR_DEPLOYED_WEB_APP_URL_HERE";
 
   const uploads = { id: null, licence: null };
 
@@ -559,22 +559,24 @@
     };
 
     try {
-      const res = await fetch(APPS_SCRIPT_URL, {
+      // NOTE: mode 'no-cors' is required here. Google Apps Script Web Apps
+      // reliably fail CORS on cross-origin POST from fetch() due to how
+      // /exec internally redirects, even with correct deployment settings.
+      // 'no-cors' lets the POST go through and run fully server-side — we
+      // just can't read the JSON response back, so the Ref ID is emailed
+      // to the applicant instead of shown live here.
+      await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
-      const result = await res.json();
-      if (result.success) {
-        document.getElementById('confirmRefId').textContent = result.refId;
-        document.getElementById('step2').classList.remove('active');
-        document.getElementById('confirmStep').classList.add('active');
-        window.scrollTo(0,0);
-      } else {
-        throw new Error(result.error || 'Submission failed.');
-      }
+
+      document.getElementById('step2').classList.remove('active');
+      document.getElementById('confirmStep').classList.add('active');
+      window.scrollTo(0,0);
     } catch (err) {
-      showMsg('step2Msg', 'Something went wrong: ' + err.message + '. Please try again.', 'error');
+      showMsg('step2Msg', 'Something went wrong: ' + err.message + '. Please check your internet connection and try again.', 'error');
       btn.disabled = false;
       btn.textContent = 'Submit Application';
     }
